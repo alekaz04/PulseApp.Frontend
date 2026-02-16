@@ -13,6 +13,7 @@ RUN rm -rf /usr/share/nginx/html/*
 
 # Копируем статические файлы PWA
 COPY index.html /usr/share/nginx/html/
+COPY config.js /usr/share/nginx/html/
 COPY app.js /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
 COPY manifest.json /usr/share/nginx/html/

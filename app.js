@@ -1,8 +1,11 @@
 // PulseApp - Frontend Logic
 // Управление подпиской на push-уведомления
 
-// Конфигурация API
-const API_BASE_URL = 'https://pulse.lvakarin.ru';
+// Конфигурация API — берётся из config.js (APP_CONFIG.API_BASE_URL)
+// Пустая строка = тот же домен (относительные пути)
+const API_BASE_URL = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.API_BASE_URL) 
+    ? APP_CONFIG.API_BASE_URL 
+    : '';
 const API_ENDPOINTS = {
     vapidPublicKey: `${API_BASE_URL}/api/vapid`,
     subscribe: `${API_BASE_URL}/api/subscribe`,
