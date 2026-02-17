@@ -1,7 +1,7 @@
 // Service Worker для PulseApp
 // Обработка push-уведомлений и базовое кэширование
 
-const CACHE_NAME = 'pulseapp-v1';
+const CACHE_NAME = 'pulseapp-v2';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -67,8 +67,8 @@ self.addEventListener('push', (event) => {
     let notificationData = {
         title: 'PulseApp',
         body: 'У вас новое уведомление',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
+        icon: '/favicon/web-app-manifest-192x192.png',
+        badge: '/favicon/favicon-96x96.png',
         data: { url: '/' }
     };
 

@@ -8,5 +8,5 @@ const APP_CONFIG = {
     //   ''                           — тот же домен (рекомендуется для прода)
     //   'http://localhost:5000'      — локальная разработка
     //   'https://pulse.lvakarin.ru'  — прямой адрес
-    API_BASE_URL: 'http://localhost:5050',
+    API_BASE_URL: '',
 };

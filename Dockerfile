@@ -19,6 +19,7 @@ COPY styles.css /usr/share/nginx/html/
 COPY manifest.json /usr/share/nginx/html/
 COPY service-worker.js /usr/share/nginx/html/
 COPY icons/ /usr/share/nginx/html/icons/
+COPY favicon/ /usr/share/nginx/html/favicon/
 
 # Устанавливаем правильные права доступа
 RUN chmod -R 755 /usr/share/nginx/html
