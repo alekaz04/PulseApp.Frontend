@@ -1,13 +1,11 @@
 // Service Worker для PulseApp
 // Обработка push-уведомлений и базовое кэширование
 
-const CACHE_NAME = 'pulseapp-v2';
+const CACHE_NAME = 'pulseapp-v3';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/styles.css',
     '/config.js',
-    '/app.js',
     '/manifest.json'
 ];
 
