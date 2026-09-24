@@ -187,4 +187,26 @@ describe('ComplimentsPage', () => {
     await waitFor(() => expect(api.deleteCompliment).toHaveBeenCalledWith('id-1'));
     expect(await screen.findByText('Комплимент удалён')).toBeInTheDocument();
   });
+
+  it('добавляет комплименты списком', async () => {
+    api.getCompliments.mockResolvedValue([]);
+    api.createCompliments.mockResolvedValue(['a', 'b']);
+    const user = userEvent.setup();
+    renderWithProviders(<ComplimentsPage />);
+    await screen.findByRole('heading', { name: 'Комплименты · 0' });
+
+    await user.click(screen.getByRole('button', { name: 'Добавить списком' }));
+    const dialog = screen.getByRole('dialog', { name: 'Добавить списком' });
+    await user.type(within(dialog).getByLabelText('Тексты, по одному на строку'), 'Первый{enter}Второй');
+    await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+    await waitFor(() =>
+      expect(api.createCompliments).toHaveBeenCalledWith([
+        { title: 'Комплимент для тебя 💌', text: 'Первый' },
+        { title: 'Комплимент для тебя 💌', text: 'Второй' },
+      ]),
+    );
+    expect(await screen.findByText('Добавлено: 2')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

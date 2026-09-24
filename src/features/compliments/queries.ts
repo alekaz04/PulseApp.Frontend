@@ -58,3 +58,10 @@ export function useDeleteCompliment() {
     () => 'Комплимент удалён',
   );
 }
+
+export function useCreateCompliments() {
+  return useComplimentMutation(
+    (items: ComplimentInput[]) => authedApi.createCompliments(items),
+    (items) => `Добавлено: ${items.length}`,
+  );
+}

@@ -7,20 +7,29 @@ import { ErrorState } from '../../shared/ui/ErrorState';
 import { Modal } from '../../shared/ui/Modal';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { Spinner } from '../../shared/ui/Spinner';
+import { BulkImport } from './BulkImport';
 import { ComplimentForm } from './ComplimentForm';
 import { ComplimentsTable } from './ComplimentsTable';
 import { sortByNewest } from './model';
-import { useCompliments, useCreateCompliment, useDeleteCompliment, useUpdateCompliment } from './queries';
+import {
+  useCompliments,
+  useCreateCompliment,
+  useCreateCompliments,
+  useDeleteCompliment,
+  useUpdateCompliment,
+} from './queries';
 
 type Dialog =
   | { kind: 'none' }
   | { kind: 'create' }
+  | { kind: 'bulk' }
   | { kind: 'edit'; compliment: ComplimentDto }
   | { kind: 'delete'; compliment: ComplimentDto };
 
 export default function ComplimentsPage() {
   const query = useCompliments();
   const createMutation = useCreateCompliment();
+  const createManyMutation = useCreateCompliments();
   const updateMutation = useUpdateCompliment();
   const deleteMutation = useDeleteCompliment();
   const [dialog, setDialog] = useState<Dialog>({ kind: 'none' });
@@ -30,6 +39,8 @@ export default function ComplimentsPage() {
   const close = () => setDialog({ kind: 'none' });
 
   const create = (input: ComplimentInput) => createMutation.mutate(input, { onSuccess: close });
+
+  const createMany = (items: ComplimentInput[]) => createManyMutation.mutate(items, { onSuccess: close });
 
   const save = (compliment: ComplimentDto, input: ComplimentInput) =>
     updateMutation.mutate(
@@ -54,7 +65,14 @@ export default function ComplimentsPage() {
     <section>
       <PageHeader
         title={query.data ? `Комплименты · ${compliments.length}` : 'Комплименты'}
-        actions={<Button onClick={() => setDialog({ kind: 'create' })}>Добавить</Button>}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setDialog({ kind: 'bulk' })}>
+              Добавить списком
+            </Button>
+            <Button onClick={() => setDialog({ kind: 'create' })}>Добавить</Button>
+          </>
+        }
       />
 
       {query.isPending && <Spinner label="Загружаем комплименты…" />}
@@ -82,6 +100,9 @@ export default function ComplimentsPage() {
           onSubmit={create}
           onClose={close}
         />
+      )}
+      {dialog.kind === 'bulk' && (
+        <BulkImport pending={createManyMutation.isPending} onSubmit={createMany} onClose={close} />
       )}
       {dialog.kind === 'edit' && (
         <ComplimentForm
