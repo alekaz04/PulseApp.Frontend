@@ -57,6 +57,16 @@ describe('RequireAuth', () => {
     expect(screen.getByText('Не удалось проверить вход')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     expect(auth.signinRedirect).toHaveBeenCalledOnce();
+    expect(auth.signinRedirect).toHaveBeenCalledWith({ state: { returnTo: '/app/invite' } });
+  });
+
+  it('ошибка при живой сессии не закрывает страницу', () => {
+    mockAuth({ isAuthenticated: true, error: new Error('renew failed') as never });
+
+    renderAt('/app/invite', <RequireAuth><p>секрет</p></RequireAuth>);
+
+    expect(screen.getByText('секрет')).toBeInTheDocument();
+    expect(screen.queryByText('Не удалось проверить вход')).not.toBeInTheDocument();
   });
 });
 

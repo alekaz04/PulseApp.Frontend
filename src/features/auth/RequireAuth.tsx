@@ -17,8 +17,15 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     }
   }, [needsLogin, auth, location.pathname, location.search]);
 
-  if (auth.error) {
-    return <ErrorState message="Не удалось проверить вход" onRetry={() => void auth.signinRedirect()} />;
+  // Ошибка фонового обновления токена при живой сессии не закрывает страницу: настоящую
+  // просрочку поймает authedApi (401 → тихое обновление → вход), а следующее обновление сбросит ошибку
+  if (auth.error && !auth.isAuthenticated) {
+    return (
+      <ErrorState
+        message="Не удалось проверить вход"
+        onRetry={() => void auth.signinRedirect({ state: { returnTo: location.pathname + location.search } })}
+      />
+    );
   }
   if (auth.isAuthenticated) {
     return <>{children}</>;
