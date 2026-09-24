@@ -1,131 +1,72 @@
-// Service Worker для PulseApp
-// Обработка push-уведомлений и базовое кэширование
+// Service Worker Pulse: показывает push-уведомления. Запросы не кэширует —
+// данные кабинета так хранить нельзя, а для push кэш не нужен.
 
-const CACHE_NAME = 'pulseapp-v3';
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/config.js',
-    '/manifest.json'
-];
+const OLD_CACHE_PREFIX = 'pulseapp-';
 
-// Установка Service Worker и кэширование статики
-self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing...');
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[Service Worker] Caching app shell');
-                return cache.addAll(urlsToCache);
-            })
-            .then(() => self.skipWaiting())
-    );
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
-// Активация Service Worker и очистка старого кэша
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating...');
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
-    );
+  event.waitUntil(
+    caches
+      .keys()
+      .then((names) => Promise.all(names.filter((name) => name.startsWith(OLD_CACHE_PREFIX)).map((name) => caches.delete(name))))
+      .then(() => self.clients.claim()),
+  );
 });
 
-// Стратегия кэширования: Network First, fallback to Cache
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        fetch(event.request)
-            .then((response) => {
-                // Клонируем ответ для кэша
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-                return response;
-            })
-            .catch(() => {
-                // Если сеть недоступна, используем кэш
-                return caches.match(event.request);
-            })
-    );
-});
-
-// КРИТИЧНО: Обработка push-уведомлений
+// Формат от бэкенда: { notification: { title, body, icon, badge, data } }
 self.addEventListener('push', (event) => {
-    console.log('[Service Worker] Push received:', event);
-    
-    let notificationData = {
-        title: 'PulseApp',
-        body: 'У вас новое уведомление',
-        icon: '/favicon/web-app-manifest-192x192.png',
-        badge: '/favicon/favicon-96x96.png',
-        data: { url: '/' }
-    };
+  let notification = {
+    title: 'Pulse',
+    body: 'У вас новое уведомление',
+    icon: '/favicon/web-app-manifest-192x192.png',
+    badge: '/favicon/favicon-96x96.png',
+    data: { url: '/' },
+  };
 
-    // Парсинг данных от сервера
-    if (event.data) {
-        try {
-            const payload = event.data.json();
-            console.log('[Service Worker] Push payload:', payload);
-            
-            // Backend отправляет структуру: { notification: { title, body, icon, badge, data } }
-            if (payload.notification) {
-                notificationData = {
-                    title: payload.notification.title || notificationData.title,
-                    body: payload.notification.body || notificationData.body,
-                    icon: payload.notification.icon || notificationData.icon,
-                    badge: payload.notification.badge || notificationData.badge,
-                    data: payload.notification.data || notificationData.data
-                };
-            }
-        } catch (error) {
-            console.error('[Service Worker] Failed to parse push data:', error);
-            // Используем дефолтные значения
-        }
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      if (payload && payload.notification) {
+        notification = {
+          title: payload.notification.title || notification.title,
+          body: payload.notification.body || notification.body,
+          icon: payload.notification.icon || notification.icon,
+          badge: payload.notification.badge || notification.badge,
+          data: payload.notification.data || notification.data,
+        };
+      }
+    } catch (error) {
+      console.error('[Service Worker] Не удалось разобрать push:', error);
     }
+  }
 
-    // Показываем уведомление
-    event.waitUntil(
-        self.registration.showNotification(notificationData.title, {
-            body: notificationData.body,
-            icon: notificationData.icon,
-            badge: notificationData.badge,
-            data: notificationData.data,
-            vibrate: [200, 100, 200],
-            tag: 'pulseapp-notification',
-            requireInteraction: false
-        })
-    );
+  event.waitUntil(
+    self.registration.showNotification(notification.title, {
+      body: notification.body,
+      icon: notification.icon,
+      badge: notification.badge,
+      data: notification.data,
+      vibrate: [200, 100, 200],
+      tag: 'pulseapp-notification',
+    }),
+  );
 });
 
-// Обработка клика по уведомлению
 self.addEventListener('notificationclick', (event) => {
-    console.log('[Service Worker] Notification clicked');
-    event.notification.close();
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
 
-    // Открываем приложение
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
-                // Если приложение уже открыто, фокусируемся на нём
-                for (let client of clientList) {
-                    if (client.url.includes(self.registration.scope) && 'focus' in client) {
-                        return client.focus();
-                    }
-                }
-                // Иначе открываем новое окно
-                if (clients.openWindow) {
-                    const urlToOpen = event.notification.data?.url || '/';
-                    return clients.openWindow(urlToOpen);
-                }
-            })
-    );
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow ? self.clients.openWindow(url) : undefined;
+    }),
+  );
 });
