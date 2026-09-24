@@ -10,6 +10,7 @@ const AuthLayout = lazy(() => import('../features/auth/AuthLayout'));
 const CallbackPage = lazy(() => import('../features/auth/CallbackPage'));
 const SignupRedirect = lazy(() => import('../features/auth/SignupRedirect'));
 const CabinetLayout = lazy(() => import('../pages/CabinetLayout'));
+const ComplimentsPage = lazy(() => import('../features/compliments/ComplimentsPage'));
 
 function page(element: ReactNode) {
   return <Suspense fallback={<FullPageSpinner />}>{element}</Suspense>;
@@ -29,7 +30,10 @@ export const routes: RouteObject[] = [
           {
             path: '/app',
             element: page(<CabinetLayout />),
-            children: [{ index: true, element: <Navigate to="/app/compliments" replace /> }],
+            children: [
+              { index: true, element: <Navigate to="/app/compliments" replace /> },
+              { path: 'compliments', element: page(<ComplimentsPage />) },
+            ],
           },
         ],
       },

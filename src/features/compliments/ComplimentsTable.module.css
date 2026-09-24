@@ -1,0 +1,28 @@
+.titleColumn {
+  width: 22%;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.date {
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
