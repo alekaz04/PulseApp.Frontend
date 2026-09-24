@@ -318,7 +318,7 @@ type BackendError = { Message: string; TraceId?: string | null }; // PascalCase:
 - `entrypoint.sh`: пишет в `config.js` три переменные: `API_BASE_URL`, `OIDC_AUTHORITY`, `OIDC_CLIENT_ID`.
 - `nginx.conf`: SPA-fallback уже покрывает `/s/*`, `/auth/*`, `/app/*`. Если спайк выберет вариант (в), добавляются `location` для манифеста по коду и `sub_filter`. `manifest.json` отдаётся с `Cache-Control: no-cache`.
 - `vite.config.ts`: proxy `/api` → `http://localhost:5050` остаётся; настройки `test` (jsdom, setup-файл с MSW).
-- CI (`.github/workflows/back-dev.yml`): перед сборкой образа шаги `actions/setup-node` (Node 22), `npm ci`, `npm run lint`, `npm test`.
+- CI (`../../../.github/workflows/front-dev.yml`): перед сборкой образа шаги `actions/setup-node` (Node 22), `npm ci`, `npm run lint`, `npm test`.
 - `README.md` переписывается: запуск, конфиг, Keycloak-клиент, ручной чек-лист.
 - Переменные для сервиса `frontend` в `PulseApp.Infrastructure/main.yml`: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` (см. документ по бэкенду).
 
