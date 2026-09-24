@@ -1,183 +1,77 @@
-# PulseApp Frontend
+# Pulse Web
 
-PWA приложение для получения ежедневных комплиментов через push-уведомления.
+Фронт Pulse: страница подписки на комплименты по ссылке и кабинет автора.
 
-## Технологии
-- **HTML5 / CSS3 / JavaScript** (Vanilla JS)
-- **PWA** (Progressive Web App)
-- **Service Worker** для push-уведомлений и offline-режима
-- **Web Push API** для уведомлений
+- **Автор** регистрируется (Keycloak), добавляет комплименты, создаёт одноразовую ссылку и видит подписчиков.
+- **Получатель** открывает `/s/<код>` и подписывается на push-уведомления **без регистрации**.
 
-## Структура проекта
-```
-PulseApp.Frontend/
-├── Dockerfile              # Docker образ с Nginx
-├── nginx.conf             # Конфигурация Nginx для PWA
-├── .dockerignore          # Исключения для Docker
-├── index.html             # Главная страница
-├── app.js                 # Логика приложения
-├── styles.css             # Стили
-├── manifest.json          # PWA манифест
-├── service-worker.js      # Service Worker для push и кэширования
-└── icons/                 # Иконки PWA
-```
+Спецификация: `docs/superpowers/specs/2026-09-24-pulse-web-design.md`.
 
-## Локальная разработка
+## Стек
 
-### Вариант 1: Live Server (VS Code)
-1. Установите расширение "Live Server" в VS Code
-2. Откройте `index.html`
-3. Нажмите "Go Live" в правом нижнем углу
-4. Приложение откроется на `http://localhost:5500`
+React 19, TypeScript, Vite, React Router 7, TanStack Query, oidc-client-ts + react-oidc-context, CSS Modules.
+Тесты: Vitest, Testing Library, MSW.
 
-### Вариант 2: Python HTTP Server
+## Маршруты
+
+| Путь | Кто | Что |
+|---|---|---|
+| `/` | все | Лендинг; статус подписки устройства; в установленном приложении — поле для ссылки |
+| `/s/:code` | получатель, без входа | Подписка по коду |
+| `/auth/callback`, `/auth/signup` | автор | Возврат из Keycloak, регистрация |
+| `/app/compliments`, `/app/invite`, `/app/subscribers` | автор | Кабинет |
+
+## Разработка
+
+Нужны Node ≥ 22 и бэкенд на `http://localhost:5050` (Vite проксирует на него `/api`).
+
 ```bash
-cd PulseApp.Frontend
-python -m http.server 8080
+npm ci
+npm run dev      # http://localhost:5173
+npm test
+npm run lint
+npm run build
 ```
-Откройте http://localhost:8080
 
-### Вариант 3: Node.js HTTP Server
+Конфиг для разработки — `public/config.js`. В Docker его перезаписывает `entrypoint.sh` из переменных окружения.
+
+### Keycloak для разработки
+
 ```bash
-npx http-server -p 8080
+docker run --rm -p 8080:8080 -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:26.0 start-dev
 ```
+
+В `http://localhost:8080` (admin/admin):
+
+1. Realm `pulse-app`; Realm settings → Login → User registration: On.
+2. Client `pulse-web`: Client authentication Off, Standard flow On, Direct access grants Off.
+3. Valid redirect URIs `http://localhost:5173/auth/callback`, Valid post logout redirect URIs `http://localhost:5173/`, Web origins `+`.
+4. Advanced → PKCE method `S256`. Client scope `basic` подключён (без него в токене нет `sub`).
 
 ## Docker
 
-### Сборка образа
 ```bash
-docker build -t pulseapp-frontend:latest .
+docker build -t pulse-frontend .
+docker run --rm -p 8080:80 \
+  -e API_BASE_URL= \
+  -e OIDC_AUTHORITY=https://<keycloak>/realms/pulse-app \
+  -e OIDC_CLIENT_ID=pulse-web \
+  pulse-frontend
 ```
 
-### Запуск контейнера
-```bash
-docker run -d -p 8080:80 --name pulseapp-frontend pulseapp-frontend:latest
-```
+`API_BASE_URL` пустой: фронт и API на одном домене, nginx хоста проксирует `/api/` на бэкенд.
 
-Приложение будет доступно на http://localhost:8080
+## Ручная проверка перед выпуском
 
-### Остановка и удаление
-```bash
-docker stop pulseapp-frontend
-docker rm pulseapp-frontend
-```
+- [ ] iPhone (iOS ≥ 16.4): открыть ссылку в Safari → «На экран „Домой“» → открыть Pulse с экрана «Домой» → «Подписаться» → разрешить → прийти push; клик по уведомлению открывает Pulse; «Отписаться» работает.
+- [ ] iPhone: после «На экран „Домой“» приложение открывается на странице ссылки, а не на главной. Если на главной — вставить ссылку в поле «Вставьте ссылку или код приглашения» и отметить это в спецификации (раздел 6.6).
+- [ ] iPhone: ссылка, открытая в Telegram, показывает инструкцию начиная с «Открыть в Safari».
+- [ ] Android Chrome: подписка, push, клик, отписка.
+- [ ] Десктопный Chrome: подписка, push, клик, отписка.
+- [ ] Кабинет на десктопе: регистрация → комплименты (добавить, списком, изменить, вернуть в очередь, удалить) → ссылка (скопировать) → подписчик появился в «Подписчиках».
+- [ ] Повторное открытие использованной ссылки на другом устройстве — «Ссылка недействительна».
 
-## Конфигурация API
+## Ограничения iOS
 
-По умолчанию приложение обращается к backend на `http://localhost:5050`.
-
-Для изменения URL API отредактируйте `app.js`:
-```javascript
-const API_BASE_URL = 'https://your-domain.com';
-```
-
-## PWA Установка
-
-### iOS (iPhone/iPad)
-1. Откройте приложение в Safari
-2. Нажмите кнопку "Поделиться" (квадрат со стрелкой)
-3. Выберите "На экран «Домой»"
-4. Нажмите "Добавить"
-
-**Требования для iOS:**
-- iOS 16.4+ для поддержки Web Push
-- HTTPS (обязательно)
-- PWA должна быть установлена на Home Screen для работы push-уведомлений
-
-### Android
-1. Откройте приложение в Chrome
-2. Нажмите меню (три точки)
-3. Выберите "Добавить на главный экран"
-4. Нажмите "Установить"
-
-## Push-уведомления
-
-### Подписка
-1. Нажмите кнопку "Подписаться на уведомления"
-2. Разрешите уведомления в браузере
-3. Подписка сохраняется на backend
-
-### Отписка
-1. Нажмите кнопку "Отписаться от уведомлений"
-2. Подписка деактивируется на backend и удаляется локально
-
-### Отладка
-Откройте Developer Tools → Console для просмотра логов:
-- `[PulseApp]` - логи приложения
-- `[Service Worker]` - логи Service Worker
-
-## Nginx конфигурация
-
-Файл `nginx.conf` оптимизирован для PWA:
-- ✅ Правильные MIME types для manifest.json и service-worker.js
-- ✅ Отключено кэширование для Service Worker (критично!)
-- ✅ Оптимальное кэширование для статики
-- ✅ Сжатие (gzip)
-- ✅ Security headers
-- ✅ SPA routing (fallback на index.html)
-- ✅ Health check endpoint (/health)
-
-## Production Deployment
-
-### С Docker Compose (рекомендуется)
-```yaml
-services:
-  frontend:
-    image: pulseapp-frontend:latest
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-```
-
-### С Nginx Reverse Proxy + HTTPS
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name app.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-## Известные ограничения
-
-### iOS Safari
-- ❌ Badge API не поддерживается
-- ❌ Background Sync API не поддерживается
-- ⚠️ Service Worker может быть убит системой для экономии ресурсов
-- ⚠️ Push работает только после установки PWA на Home Screen
-- ⚠️ Лимит кэша ~50MB
-
-### Общие
-- HTTPS обязателен для Production
-- Push API требует VAPID ключи на backend
-
-## Troubleshooting
-
-### Push-уведомления не приходят
-1. Проверьте, что приложение установлено на Home Screen (iOS)
-2. Проверьте, что разрешение на уведомления дано
-3. Откройте Console и проверьте ошибки
-4. Убедитесь, что backend работает и отправляет уведомления
-
-### Service Worker не регистрируется
-1. Убедитесь, что используется HTTPS или localhost
-2. Проверьте Console на ошибки
-3. Очистите кэш браузера и Service Workers
-
-### Приложение не кэширует контент
-1. Проверьте, что Service Worker активен (DevTools → Application → Service Workers)
-2. Проверьте Network tab: статика должна отдаваться из "(ServiceWorker)"
-3. Обновите версию CACHE_NAME в service-worker.js
-
-## License
-MIT
+- Push работает только в приложении с экрана «Домой», iOS 16.4+.
+- У приложения с экрана «Домой» своё хранилище, отдельное от Safari. Если код ссылки не сохранился при установке, его можно вставить на главном экране (см. раздел 6.6 спецификации).
