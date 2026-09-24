@@ -309,7 +309,8 @@ type BackendError = { Message: string; TraceId?: string | null }; // PascalCase:
 
 - ESLint (flat config): `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`.
 - `tsconfig` в режиме `strict`.
-- Скрипты: `dev`, `build` (`tsc -b && vite build`), `preview`, `lint`, `test`, `test:watch`.
+- Скрипты: `dev`, `build` (`tsc --noEmit && vite build`), `preview`, `lint`, `test`, `test:watch`.
+- Запрет импортов через ESLint `no-restricted-imports`: `features/subscribe/**`, `pages/LandingPage.tsx`, `pages/NotFoundPage.tsx` и `shared/**` (кроме `shared/api/authedApi.ts`) не импортируют `oidc-client-ts`, `react-oidc-context`, `@tanstack/react-query`, `authedApi` и модули авторизации. Так требование 6.1 проверяется автоматически.
 
 ## 11. Сборка, деплой, CI
 
