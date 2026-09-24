@@ -1,0 +1,7 @@
+.summary {
+  font-weight: 600;
+}
+
+.error {
+  color: var(--color-danger);
+}
