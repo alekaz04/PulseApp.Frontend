@@ -74,8 +74,8 @@ describe('recipientLabel', () => {
     expect(recipientLabel({ ...base, name: ' Маша ', userAgent: IPHONE_SAFARI })).toBe('Маша · iPhone · Safari');
   });
 
-  it('без имени — только устройство', () => {
-    expect(recipientLabel({ ...base, name: '   ', userAgent: IPHONE_SAFARI })).toBe('iPhone · Safari');
-    expect(recipientLabel({ ...base, userAgent: null })).toBe('Неизвестное устройство');
+  it('без имени — устройство и дата подписки, чтобы различать одинаковые устройства', () => {
+    expect(recipientLabel({ ...base, name: '   ', userAgent: IPHONE_SAFARI })).toBe('iPhone · Safari · с 10.09.2026');
+    expect(recipientLabel({ ...base, userAgent: null })).toBe('Неизвестное устройство · с 10.09.2026');
   });
 });

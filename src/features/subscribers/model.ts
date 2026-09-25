@@ -1,4 +1,5 @@
 import type { MySubscriptionDto } from '../../shared/api/types';
+import { formatDate } from '../../shared/lib/format';
 
 const UNKNOWN = 'Неизвестное устройство';
 
@@ -60,10 +61,11 @@ export function subscriberName(subscription: MySubscriptionDto): string | null {
 }
 
 /**
- * Подпись получателя в окне отправки: «Маша · iPhone · Safari», без имени — только устройство.
+ * Подпись получателя в окне отправки: «Маша · iPhone · Safari».
+ * Без имени — устройство и дата подписки: у старых подписок имени нет, а одинаковые устройства иначе не различить.
  */
 export function recipientLabel(subscription: MySubscriptionDto): string {
   const device = parseUserAgent(subscription.userAgent);
   const name = subscriberName(subscription);
-  return name ? `${name} · ${device}` : device;
+  return name ? `${name} · ${device}` : `${device} · с ${formatDate(subscription.createdAt)}`;
 }
