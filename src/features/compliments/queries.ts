@@ -3,6 +3,7 @@ import { authedApi } from '../../shared/api/authedApi';
 import { describeError } from '../../shared/api/http';
 import type { ComplimentInput, ComplimentUpdate } from '../../shared/api/types';
 import { useToast } from '../../shared/ui/toastContext';
+import { subscriptionsKey } from '../subscribers/queries';
 
 export const complimentsKey = ['compliments'] as const;
 
@@ -64,4 +65,35 @@ export function useCreateCompliments() {
     (items: ComplimentInput[]) => authedApi.createCompliments(items),
     (items) => `Добавлено: ${items.length}`,
   );
+}
+
+export type SendComplimentVariables = {
+  subscriptionId: string;
+  complimentId: string;
+};
+
+/**
+ * Отправка комплимента одному подписчику: тост и перечитывание списков.
+ * Бэкенд ставит комплименту isBeenPushed, а при ответе push-сервиса 404/410 отключает подписку.
+ */
+export function useSendCompliment() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: ({ subscriptionId, complimentId }: SendComplimentVariables) =>
+      authedApi.sendCompliment(subscriptionId, complimentId),
+    onSuccess: () => {
+      toast.show('Комплимент отправлен', { type: 'success' });
+    },
+    onError: (error) => {
+      const { message, traceId } = describeError(error);
+      toast.show(message, { type: 'error', traceId });
+    },
+    // Ждём перечитывания: окно закроется, когда статусы в списках уже свежие
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: complimentsKey }),
+        queryClient.invalidateQueries({ queryKey: subscriptionsKey }),
+      ]),
+  });
 }
