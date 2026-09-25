@@ -32,18 +32,27 @@ beforeEach(() => {
 });
 
 describe('SubscribersPage', () => {
-  it('показывает подписчиков: активные сверху', async () => {
+  // Review Focus 2
+  it('показывает подписчиков: активные сверху, имя или прочерк', async () => {
     api.getMySubscriptions.mockResolvedValue([
-      { id: 's1', userAgent: null, createdAt: '2026-09-20T10:00:00+00:00', isActive: false },
-      { id: 's2', userAgent: IPHONE_APP, createdAt: '2026-09-10T10:00:00+00:00', isActive: true },
+      { id: 's1', name: null, userAgent: null, createdAt: '2026-09-20T10:00:00+00:00', isActive: false },
+      { id: 's2', name: '  Маша ', userAgent: IPHONE_APP, createdAt: '2026-09-10T10:00:00+00:00', isActive: true },
     ]);
 
     renderWithProviders(<SubscribersPage />);
 
     expect(await screen.findByRole('heading', { name: 'Подписчики · 2' })).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
+      'Имя',
+      'Устройство',
+      'Подписан',
+      'Статус',
+    ]);
     const rows = screen.getAllByRole('row');
+    expect(within(rows[1]!).getByText('Маша')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('iPhone · веб-приложение')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('Активна')).toBeInTheDocument();
+    expect(within(rows[2]!).getByText('—')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('Неизвестное устройство')).toBeInTheDocument();
     expect(within(rows[2]!).getByText('Отключена')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('iPhone · веб-приложение')).toHaveAttribute('title', IPHONE_APP);

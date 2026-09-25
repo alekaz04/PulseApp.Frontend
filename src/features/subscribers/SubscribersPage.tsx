@@ -7,7 +7,7 @@ import { LinkButton } from '../../shared/ui/LinkButton';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { Spinner } from '../../shared/ui/Spinner';
 import table from '../../shared/ui/Table.module.css';
-import { parseUserAgent, sortSubscriptions } from './model';
+import { parseUserAgent, sortSubscriptions, subscriberName } from './model';
 import { useSubscriptions } from './queries';
 
 export default function SubscribersPage() {
@@ -32,6 +32,7 @@ export default function SubscribersPage() {
         <table className={table.table}>
           <thead>
             <tr>
+              <th>Имя</th>
               <th>Устройство</th>
               <th>Подписан</th>
               <th>Статус</th>
@@ -40,6 +41,7 @@ export default function SubscribersPage() {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
+                <td data-label="Имя">{subscriberName(item) ?? '—'}</td>
                 <td data-label="Устройство">
                   <span title={item.userAgent ?? undefined}>{parseUserAgent(item.userAgent)}</span>
                 </td>
