@@ -51,3 +51,19 @@ export function sortSubscriptions(items: MySubscriptionDto[]): MySubscriptionDto
     return Date.parse(b.createdAt) - Date.parse(a.createdAt);
   });
 }
+
+/**
+ * Имя подписчика без пробелов по краям или null, если имени нет.
+ */
+export function subscriberName(subscription: MySubscriptionDto): string | null {
+  return subscription.name?.trim() || null;
+}
+
+/**
+ * Подпись получателя в окне отправки: «Маша · iPhone · Safari», без имени — только устройство.
+ */
+export function recipientLabel(subscription: MySubscriptionDto): string {
+  const device = parseUserAgent(subscription.userAgent);
+  const name = subscriberName(subscription);
+  return name ? `${name} · ${device}` : device;
+}

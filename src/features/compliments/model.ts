@@ -42,3 +42,11 @@ export function hasErrors(errors: ComplimentErrors): boolean {
 export function sortByNewest(compliments: ComplimentDto[]): ComplimentDto[] {
   return [...compliments].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 }
+
+/**
+ * Порядок в окне отправки: сначала неотправленные, затем отправленные; внутри группы новые сверху.
+ */
+export function sortForSending(compliments: ComplimentDto[]): ComplimentDto[] {
+  const newest = sortByNewest(compliments);
+  return [...newest.filter((c) => !c.isBeenPushed), ...newest.filter((c) => c.isBeenPushed)];
+}
