@@ -84,4 +84,11 @@ export const authedApi = {
   getMySubscriptions(): Promise<MySubscriptionDto[]> {
     return authedRequest<MySubscriptionDto[]>('/api/subscription');
   },
+
+  sendCompliment(subscriptionId: string, complimentId: string): Promise<null> {
+    const query = new URLSearchParams({ complimentId });
+    return authedRequest<null>(`/api/subscription/push/to/${encodeURIComponent(subscriptionId)}?${query}`, {
+      method: 'POST',
+    });
+  },
 };

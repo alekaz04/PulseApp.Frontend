@@ -131,6 +131,20 @@ describe('authedApi', () => {
     ]);
   });
 
+  it('sendCompliment шлёт POST на push/to/{id} с complimentId в query', async () => {
+    let seen: { method: string; path: string; complimentId: string | null } | null = null;
+    server.use(
+      http.post('*/api/subscription/push/to/:id', ({ request }) => {
+        const url = new URL(request.url);
+        seen = { method: request.method, path: url.pathname, complimentId: url.searchParams.get('complimentId') };
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    await expect(authedApi.sendCompliment('sub-1', 'comp-1')).resolves.toBeNull();
+    expect(seen).toEqual({ method: 'POST', path: '/api/subscription/push/to/sub-1', complimentId: 'comp-1' });
+  });
+
   it('createCompliments шлёт массив в batch', async () => {
     let body: unknown = null;
     server.use(
