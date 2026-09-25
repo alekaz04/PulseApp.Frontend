@@ -1,28 +1,44 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { authedApi } from '../../shared/api/authedApi';
 import { describeError } from '../../shared/api/http';
 import { Button } from '../../shared/ui/Button';
 import { Card } from '../../shared/ui/Card';
+import { Field, TextInput } from '../../shared/ui/Field';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useToast } from '../../shared/ui/toastContext';
+import { charCount } from '../compliments/model';
 import { buildInviteUrl } from './buildInviteUrl';
 import styles from './InvitePage.module.css';
+import { NAME_MAX, validateName } from './model';
 
 export default function InvitePage() {
   const toast = useToast();
+  const nameId = useId();
   const fieldRef = useRef<HTMLTextAreaElement>(null);
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string>();
   const [url, setUrl] = useState<string | null>(null);
   const canShare = typeof navigator.share === 'function';
 
   const create = useMutation({
-    mutationFn: () => authedApi.createInviteCode(),
+    mutationFn: (recipientName: string) => authedApi.createInviteCode(recipientName),
     onSuccess: (code) => setUrl(buildInviteUrl(window.location.origin, code)),
     onError: (error) => {
       const { message, traceId } = describeError(error);
       toast.show(message, { type: 'error', traceId });
     },
   });
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const cleaned = name.trim();
+    const error = validateName(cleaned);
+    setNameError(error);
+    if (!error) {
+      create.mutate(cleaned);
+    }
+  };
 
   const copy = async () => {
     if (!url) return;
@@ -55,11 +71,16 @@ export default function InvitePage() {
         регистрироваться ему не нужно.
       </p>
 
-      <div>
-        <Button onClick={() => create.mutate()} disabled={create.isPending}>
-          {create.isPending ? 'Создаём…' : url ? 'Создать новую ссылку' : 'Создать ссылку'}
-        </Button>
-      </div>
+      <form className={styles.form} onSubmit={submit} noValidate>
+        <Field label="Имя получателя" htmlFor={nameId} error={nameError} count={charCount(name)} max={NAME_MAX}>
+          <TextInput id={nameId} value={name} autoComplete="off" onChange={(event) => setName(event.target.value)} />
+        </Field>
+        <div>
+          <Button type="submit" disabled={create.isPending}>
+            {create.isPending ? 'Создаём…' : url ? 'Создать новую ссылку' : 'Создать ссылку'}
+          </Button>
+        </div>
+      </form>
 
       {url && (
         <Card className={styles.result}>

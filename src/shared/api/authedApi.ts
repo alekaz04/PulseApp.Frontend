@@ -73,8 +73,8 @@ export const authedApi = {
     return authedRequest<null>(`/api/compliment/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
 
-  async createInviteCode(): Promise<string> {
-    const code = await authedRequest<unknown>('/api/subscription/create', { method: 'POST' });
+  async createInviteCode(name: string): Promise<string> {
+    const code = await authedRequest<unknown>('/api/code/create', { method: 'POST', body: { name } });
     if (typeof code !== 'string' || !code.trim()) {
       throw new ApiError(500, 'Сервер не вернул код приглашения');
     }

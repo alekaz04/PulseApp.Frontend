@@ -92,19 +92,27 @@ describe('authedApi', () => {
     expect(authorization).toBeNull();
   });
 
-  it('createInviteCode понимает JSON-строку', async () => {
-    server.use(http.post('*/api/subscription/create', () => HttpResponse.json('3f2b-code')));
-    await expect(authedApi.createInviteCode()).resolves.toBe('3f2b-code');
+  it('createInviteCode шлёт имя в POST /api/code/create и понимает JSON-строку', async () => {
+    let seen: { path: string; body: unknown } | null = null;
+    server.use(
+      http.post('*/api/code/create', async ({ request }) => {
+        seen = { path: new URL(request.url).pathname, body: await request.json() };
+        return HttpResponse.json('3f2b-code');
+      }),
+    );
+
+    await expect(authedApi.createInviteCode('Маша')).resolves.toBe('3f2b-code');
+    expect(seen).toEqual({ path: '/api/code/create', body: { name: 'Маша' } });
   });
 
   it('createInviteCode понимает text/plain', async () => {
-    server.use(http.post('*/api/subscription/create', () => HttpResponse.text(' 3f2b-code\n')));
-    await expect(authedApi.createInviteCode()).resolves.toBe('3f2b-code');
+    server.use(http.post('*/api/code/create', () => HttpResponse.text(' 3f2b-code\n')));
+    await expect(authedApi.createInviteCode('Маша')).resolves.toBe('3f2b-code');
   });
 
   it('createInviteCode без кода — ошибка', async () => {
-    server.use(http.post('*/api/subscription/create', () => HttpResponse.text('')));
-    await expect(authedApi.createInviteCode()).rejects.toMatchObject({
+    server.use(http.post('*/api/code/create', () => HttpResponse.text('')));
+    await expect(authedApi.createInviteCode('Маша')).rejects.toMatchObject({
       message: 'Сервер не вернул код приглашения',
     });
   });

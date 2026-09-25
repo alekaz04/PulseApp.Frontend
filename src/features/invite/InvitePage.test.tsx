@@ -14,6 +14,7 @@ vi.mock('../../shared/api/authedApi', () => ({
     deleteCompliment: vi.fn(),
     createInviteCode: vi.fn(),
     getMySubscriptions: vi.fn(),
+    sendCompliment: vi.fn(),
   },
 }));
 
@@ -34,9 +35,10 @@ afterEach(() => {
   delete (navigator as unknown as Record<string, unknown>).share;
 });
 
-async function createLink() {
+async function createLink(name = 'Маша') {
   api.createInviteCode.mockResolvedValue(CODE);
   renderWithProviders(<InvitePage />);
+  fireEvent.change(screen.getByLabelText('Имя получателя'), { target: { value: name } });
   fireEvent.click(screen.getByRole('button', { name: 'Создать ссылку' }));
   return screen.findByLabelText('Ваша ссылка');
 }
@@ -100,9 +102,36 @@ describe('InvitePage', () => {
     api.createInviteCode.mockRejectedValue(new ApiError(500, 'Internal Server Error', 't-7'));
     renderWithProviders(<InvitePage />);
 
+    fireEvent.change(screen.getByLabelText('Имя получателя'), { target: { value: 'Маша' } });
     fireEvent.click(screen.getByRole('button', { name: 'Создать ссылку' }));
 
     expect(await screen.findByText('Ошибка сервера. Попробуйте позже')).toBeInTheDocument();
     expect(screen.getByText('Код: t-7')).toBeInTheDocument();
+  });
+
+  it('отправляет имя без пробелов по краям', async () => {
+    await createLink('  Маша  ');
+    expect(api.createInviteCode).toHaveBeenCalledWith('Маша');
+  });
+
+  it('без имени ссылку не создаёт', async () => {
+    renderWithProviders(<InvitePage />);
+
+    fireEvent.change(screen.getByLabelText('Имя получателя'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать ссылку' }));
+
+    expect(await screen.findByText('Введите имя')).toBeInTheDocument();
+    expect(api.createInviteCode).not.toHaveBeenCalled();
+  });
+
+  it('слишком длинное имя не отправляет', async () => {
+    renderWithProviders(<InvitePage />);
+
+    fireEvent.change(screen.getByLabelText('Имя получателя'), { target: { value: 'a'.repeat(101) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать ссылку' }));
+
+    expect(await screen.findByText('Не больше 100 символов')).toBeInTheDocument();
+    expect(screen.getByText('101/100')).toBeInTheDocument();
+    expect(api.createInviteCode).not.toHaveBeenCalled();
   });
 });
