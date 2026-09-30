@@ -19,6 +19,8 @@ export type ComplimentUpdate = ComplimentInput & {
 
 export type MySubscriptionDto = {
   id: string;
+  /** Имя из ссылки-приглашения. У старых подписок его нет, бэкенд может ещё не отдавать поле */
+  name?: string | null;
   userAgent: string | null;
   createdAt: string;
   isActive: boolean;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ComplimentDto } from '../../shared/api/types';
-import { charCount, hasErrors, sortByNewest, validateCompliment } from './model';
+import { charCount, hasErrors, sortByNewest, sortForSending, validateCompliment } from './model';
 
 describe('charCount', () => {
   it('эмодзи — один символ', () => {
@@ -42,5 +42,19 @@ describe('sortByNewest', () => {
 
     expect(sortByNewest(list).map((c) => c.id)).toEqual(['new', 'old']);
     expect(list.map((c) => c.id)).toEqual(['old', 'new']);
+  });
+});
+
+describe('sortForSending', () => {
+  it('сначала неотправленные, затем отправленные, внутри — новые сверху; исходный массив не меняется', () => {
+    const list = [
+      { id: 'sent-new', isBeenPushed: true, createdAt: '2026-09-20T10:00:00+00:00' },
+      { id: 'queued-old', isBeenPushed: false, createdAt: '2026-09-01T10:00:00+00:00' },
+      { id: 'sent-old', isBeenPushed: true, createdAt: '2026-09-02T10:00:00+00:00' },
+      { id: 'queued-new', isBeenPushed: false, createdAt: '2026-09-10T10:00:00+00:00' },
+    ] as ComplimentDto[];
+
+    expect(sortForSending(list).map((c) => c.id)).toEqual(['queued-new', 'queued-old', 'sent-new', 'sent-old']);
+    expect(list.map((c) => c.id)).toEqual(['sent-new', 'queued-old', 'sent-old', 'queued-new']);
   });
 });

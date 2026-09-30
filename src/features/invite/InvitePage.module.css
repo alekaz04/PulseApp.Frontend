@@ -9,6 +9,10 @@
   color: var(--color-muted);
 }
 
+.form {
+  max-width: 420px;
+}
+
 .result {
   display: flex;
   flex-direction: column;

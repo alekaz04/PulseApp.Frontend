@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MySubscriptionDto } from '../../shared/api/types';
-import { parseUserAgent, sortSubscriptions } from './model';
+import { parseUserAgent, recipientLabel, sortSubscriptions, subscriberName } from './model';
 
 describe('parseUserAgent', () => {
   it.each([
@@ -49,5 +49,33 @@ describe('sortSubscriptions', () => {
     ] as MySubscriptionDto[];
 
     expect(sortSubscriptions(items).map((item) => item.id)).toEqual(['active-new', 'active-old', 'inactive-new']);
+  });
+});
+
+const base: MySubscriptionDto = { id: 's1', userAgent: null, createdAt: '2026-09-10T10:00:00+00:00', isActive: true };
+const IPHONE_SAFARI =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+
+// Review Focus 2
+describe('subscriberName', () => {
+  it.each([
+    ['  Маша ', 'Маша'],
+    ['   ', null],
+    ['', null],
+    [null, null],
+    [undefined, null],
+  ])('%j → %j', (name, expected) => {
+    expect(subscriberName({ ...base, name })).toBe(expected);
+  });
+});
+
+describe('recipientLabel', () => {
+  it('имя и устройство', () => {
+    expect(recipientLabel({ ...base, name: ' Маша ', userAgent: IPHONE_SAFARI })).toBe('Маша · iPhone · Safari');
+  });
+
+  it('без имени — устройство и дата подписки, чтобы различать одинаковые устройства', () => {
+    expect(recipientLabel({ ...base, name: '   ', userAgent: IPHONE_SAFARI })).toBe('iPhone · Safari · с 10.09.2026');
+    expect(recipientLabel({ ...base, userAgent: null })).toBe('Неизвестное устройство · с 10.09.2026');
   });
 });

@@ -16,13 +16,16 @@ import {
   useCreateCompliment,
   useCreateCompliments,
   useDeleteCompliment,
+  useSendCompliment,
   useUpdateCompliment,
 } from './queries';
+import { SendComplimentDialog } from './SendComplimentDialog';
 
 type Dialog =
   | { kind: 'none' }
   | { kind: 'create' }
   | { kind: 'bulk' }
+  | { kind: 'send' }
   | { kind: 'edit'; compliment: ComplimentDto }
   | { kind: 'delete'; compliment: ComplimentDto };
 
@@ -32,6 +35,7 @@ export default function ComplimentsPage() {
   const createManyMutation = useCreateCompliments();
   const updateMutation = useUpdateCompliment();
   const deleteMutation = useDeleteCompliment();
+  const sendMutation = useSendCompliment();
   const [dialog, setDialog] = useState<Dialog>({ kind: 'none' });
 
   const compliments = useMemo(() => sortByNewest(query.data ?? []), [query.data]);
@@ -61,12 +65,18 @@ export default function ComplimentsPage() {
 
   const remove = (compliment: ComplimentDto) => deleteMutation.mutate(compliment.id, { onSuccess: close });
 
+  const send = (subscriptionId: string, complimentId: string) =>
+    sendMutation.mutate({ subscriptionId, complimentId }, { onSuccess: close });
+
   return (
     <section>
       <PageHeader
         title={query.data ? `Комплименты · ${compliments.length}` : 'Комплименты'}
         actions={
           <>
+            <Button variant="secondary" onClick={() => setDialog({ kind: 'send' })}>
+              Отправить
+            </Button>
             <Button variant="secondary" onClick={() => setDialog({ kind: 'bulk' })}>
               Добавить списком
             </Button>
@@ -103,6 +113,9 @@ export default function ComplimentsPage() {
       )}
       {dialog.kind === 'bulk' && (
         <BulkImport pending={createManyMutation.isPending} onSubmit={createMany} onClose={close} />
+      )}
+      {dialog.kind === 'send' && (
+        <SendComplimentDialog pending={sendMutation.isPending} onSend={send} onClose={close} />
       )}
       {dialog.kind === 'edit' && (
         <ComplimentForm

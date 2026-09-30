@@ -1,4 +1,5 @@
 import type { MySubscriptionDto } from '../../shared/api/types';
+import { formatDate } from '../../shared/lib/format';
 
 const UNKNOWN = 'Неизвестное устройство';
 
@@ -50,4 +51,21 @@ export function sortSubscriptions(items: MySubscriptionDto[]): MySubscriptionDto
     }
     return Date.parse(b.createdAt) - Date.parse(a.createdAt);
   });
+}
+
+/**
+ * Имя подписчика без пробелов по краям или null, если имени нет.
+ */
+export function subscriberName(subscription: MySubscriptionDto): string | null {
+  return subscription.name?.trim() || null;
+}
+
+/**
+ * Подпись получателя в окне отправки: «Маша · iPhone · Safari».
+ * Без имени — устройство и дата подписки: у старых подписок имени нет, а одинаковые устройства иначе не различить.
+ */
+export function recipientLabel(subscription: MySubscriptionDto): string {
+  const device = parseUserAgent(subscription.userAgent);
+  const name = subscriberName(subscription);
+  return name ? `${name} · ${device}` : `${device} · с ${formatDate(subscription.createdAt)}`;
 }
